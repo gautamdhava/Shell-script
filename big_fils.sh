@@ -1,5 +1,5 @@
 #/bin/bash
-#Prepared by Gautam
+#Prepared by Gautam Dhavamani
 #Script to list large directories and files in a Filesystem, and it will not cross Filesystem boundaries.
 fun()
 {
