@@ -1,9 +1,13 @@
 #/bin/bash
+<<<<<<< HEAD:big_fils.sh
 #Prepared by tes mod
+=======
+#Prepared by Gautam D
+>>>>>>> newgtmbranch:list_bigfiles.sh
 #Script to list large directories and files in a Filesystem, and it will not cross Filesystem boundaries.
 fun()
 {
-case $FS in
+case $FS1 in
         /*) true;;
         * ) echo -e "Enter absolute path of FS example \"/home\"" ;exit 1;;
 esac
