@@ -1,5 +1,5 @@
 #!/bin/bash
-#gautam.dhavamani
+#devoloped by gautam.dhavamani
 fun()
 {
 case $mpt in
