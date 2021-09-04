@@ -1,6 +1,6 @@
 #/bin/bash
 <<<<<<< HEAD:big_fils.sh
-#Prepared by tes mod
+
 =======
 #Prepared by Gautam D
 >>>>>>> newgtmbranch:list_bigfiles.sh
