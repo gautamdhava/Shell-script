@@ -2,7 +2,7 @@
 <<<<<<< HEAD:big_fils.sh
 
 =======
-#Prepared by Gautam D
+#Dev by Gautam D
 >>>>>>> newgtmbranch:list_bigfiles.sh
 #Script to list large directories and files in a Filesystem, and it will not cross Filesystem boundaries.
 fun()
