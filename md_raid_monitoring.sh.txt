@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# check_md_raid.sh Check the status of all active software RAID arrays on
+#     Linux servers
+#
+# AUTHOR: Gautam Dhavamani
+#
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+export PATH
+
+if [[ ! -f /proc/mdstat ]]; then
+  # Software RAID not supported
+  echo "OK"
+  exit 0
+fi
+
+# Get count of raid arrays
+RAID_DEVICES=`grep -c ^md /proc/mdstat`
+if [[ $RAID_DEVICES -eq "0" ]]; then
+  # No software RAID (md) devices exist
+  echo "OK"
+  exit 0
+fi
+
+# Get count of degraded arrays
+RAID_STATUS=`grep -c "\[.*_.*\]" /proc/mdstat`
+if [[ $RAID_STATUS -eq "0" ]]; then
+  # All software RAID (md) devices are healthy
+  echo "OK"
+  exit 0
+fi
+
+# Is an array currently recovering
+RAID_RECOVER=`grep -ic recovery /proc/mdstat`
+
+if [[ $RAID_RECOVER -ne "0" ]]; then
+  # RAID is recovering
+  echo "WARNING"
+  exit 1
+fi
+
+# All other conditions mean there's something critical
+echo "CRITICAL"
+exit 2
+
+# vim:sw=2:ts=2:et

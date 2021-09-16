@@ -1,0 +1,37 @@
+#!/bin/bash
+#
+# verify_rpms.sh Perform RPM verification against critical RPMs
+#
+# AUTHOR: Gautam Dhavamani
+#
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+export PATH
+
+PACKAGE_LIST=/usr/local/scom-monitors/etc/verify_rpms.conf
+
+if [ ! -f "$PACKAGE_LIST" ]; then
+  echo "UNKNOWN: File does not exist: $PACKAGE_LIST"
+  exit 3
+fi
+if [ ! -r "$PACKAGE_LIST" ]; then
+  echo "UNKNOWN: File is not readable: $PACKAGE_LIST"
+  exit 3
+fi
+
+for rpm in `grep -v "^#" $PACKAGE_LIST`; do
+  OUTPUT=$(timeout 80s bash -c "sudo /bin/rpm -V $rpm | grep -v -e ' [cg] ' -e ' /home$' -e ' /boot/efi' -e '^missing' -e \"^package $rpm is not installed$\"")
+  RETVAL=${PIPESTATUS[0]}
+  if [ $RETVAL -eq 124 ]; then
+    echo "UNKNOWN: RPM verification timed out. Possible rpm database corruption"
+    exit 3
+  elif [ -n "$OUTPUT" ]; then
+    echo "CRITICAL: RPM verification failed"
+    echo "$rpm"
+    echo "$OUTPUT"
+    exit 2
+  fi
+done
+
+echo "OK: RPM verification succeeded"
+exit 0
