@@ -1,0 +1,86 @@
+#!/bin/bash
+#Prepared by Gautam Dhavamani
+#Script to investigate SSH bad login attempts.
+sep="echo "------------------------------------------""
+
+if [[ $1 == "today" ]];
+        then
+                declare -a ip=`aureport -l --failed -ts today | grep -w root | awk '{print $(NF-4)}' | uniq`
+                declare -a ou=`lastb --since=today | egrep -v '^$' | grep -v btmp | awk '{ print $1}'| uniq`
+                d1=`echo $(date) | cut -f 3 -d " "`;m1=`echo $(date) | cut -f 2 -d " "`
+                if [[ $d1 -ge 10 ]];then
+                dt="$m1 $d1"
+                else
+                dt="$m1  $d1"
+                fi
+                echo -e "\e[1;32m\nSummary\e[0m";aureport -l --failed -ts today  --summary -i
+elif [[ $1 =~ ^[0-9]+$ && $1 -ge "1" && $1 -le "31" && $# == "3" && $2 =~ ^[A-Za-z_]+$ && $3 -ge "2020" ]];
+        then
+                mn=`echo $2 | cut -c1-3`;d1="$1 $mn $3";d3=`expr $1 + 1`;d4="$d3 $mn $3";M=`echo ${mn^}`
+                todate=`date -d"$(date)" +%Y%m%d`;indate=`date -d"$d1"  +%Y%m%d`;
+                if [[ $indate -gt $todate ]];then
+                        echo "Date should be earlier or equal to Today Date ";exit 2;
+                fi
+                asg=`date -d"$d1" +%m/%d/%Y`;asg1=`date -d"$d4" +%m/%d/%Y`;asg2=`date -d"$d1" +%Y-%m-%d`;asg3=`date -d"$d4" +%Y-%m-%d`
+                declare -a ip=`aureport -l --failed -ts $asg -te $asg1 | grep -w root | awk '{print $(NF-4)}' | uniq`
+                declare -a ou=`lastb --since=$asg2 --until=$asg3 | egrep -v '^$' | grep -v btmp | awk '{ print $1}'| uniq`
+                if [[ -z $ou ]];then
+                        declare -a srchbtmp=`find /var/log -name "btmp-*" -exec ls {} \;`
+                        for bt in $srchbtmp;do
+                                declare -a ou=`lastb -f $bt --since=$asg2 --until=$asg3 | egrep -v '^$' | grep -v btmp | awk '{ print $1}'| uniq`
+                                opt=`lastb -f $bt --since=$asg2 --until=$asg3 | egrep -v '^$' | grep -v btmp`
+                                if [[ ! -z $ou ]];then
+                                        break
+#https://bash.cyberciti.biz/guide/Break_statement
+                                fi
+                        done
+                fi
+                if [[ $1 -ge 10 ]];then
+                        dt="$M $1"
+                else
+                        dt="$M  $1"
+                fi
+                echo -e "\e[1;32m\nSummary\e[0m";aureport -l --failed -ts "$asg" -te "$asg1" --summary -i
+
+else
+        echo -e "\nAvailable arguments - 1.today (or) 2.Specify date in this format \"6 aug 2020\"";echo -e "Example:\n1)$0 today \n2)$0 2 aug 2020 ";exit 2
+fi
+
+
+if [[ ! -z $ip ]] ;then
+        echo -e "\e[1;32m\nDirect Root login attempts \n\e[0m";
+        if [[ $1 == "today" ]];then
+                aureport -l --failed -ts today| grep -w root
+        else
+                aureport -l --failed -ts $asg -te $asg1 | grep -w root;
+        fi
+
+echo -e "\e[1;32m\nRelated records from Secure log\e[0m"
+for i in $ip
+do
+        echo -e "\033[1m\nSource \"$i\"\n\033[0m"
+        zgrep $i /var/log/secure* | egrep "$dt";echo -e "\033[1m\nnslookup \"$i\"\033[0m" ; echo -e "\n`nslookup $i`";$sep
+done
+
+fi
+
+if [[ ! -z $ou ]] ;then
+        echo -e "\e[1;32m\nOther user bad login attempts\e[0m";
+        if [[ $1 == "today" ]];then
+                echo " "; lastb --since=today  -ad | egrep -v '^$' | grep -v btmp
+        elif [[ ! -z $opt ]];then
+                lastb -f $bt --since=$asg2 --until=$asg3 | egrep -v '^$' | grep -v btmp
+        else
+                echo " "; lastb --since=$asg2 --until=$asg3 -ad | egrep -v '^$' | grep -v btmp
+        fi
+
+echo -e "\e[1;32m\nRelated records from Secure log\e[0m"
+for j in $ou
+do
+        echo -e "\033[1m\nUser \"$j\"\n\033[0m"
+        zgrep $j /var/log/secure* | egrep "$dt";echo -e "\033[1m\nLast successful login for \"$j\"\n\033[0m"; lastlog -u $j;echo -e "\033[1m\ngetent $j\033[0m\n";getent passwd $j;$sep
+done
+
+fi
+
+exit 0;
